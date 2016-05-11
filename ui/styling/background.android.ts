@@ -154,21 +154,25 @@ export module ad {
                     params.posX = params.repeatX ? 0 : params.posX;
                     params.posY = params.repeatY ? 0 : params.posY;
 
-                    let supportsPathOp = android.os.Build.VERSION.SDK_INT >= 19;
-                    if (supportsPathOp) {
-                        // Path.Op can be used in API level 19+ to achieve the perfect geometry.
-                        let backgroundPath = new android.graphics.Path();
-                        backgroundPath.addRoundRect(backgroundBoundsF, outerRadius, outerRadius, android.graphics.Path.Direction.CCW);
-                        let backgroundNoRepeatPath = new android.graphics.Path();
-                        backgroundNoRepeatPath.addRect(params.posX, params.posY, params.posX + imageWidth, params.posY + imageHeight, android.graphics.Path.Direction.CCW);
-                        (<any>backgroundPath).op(backgroundNoRepeatPath, (<any>android).graphics.Path.Op.INTERSECT);
-                        canvas.drawPath(backgroundPath, backgroundImagePaint);
+                    if (this.clipPath) {
+                        drawClipPath(this.clipPath, canvas, backgroundImagePaint, backgroundBoundsF);
                     } else {
-                        // Clipping here will not be antialiased but at least it won't shine through the rounded corners.
-                        canvas.save();
-                        canvas.clipRect(params.posX, params.posY, params.posX + imageWidth, params.posY + imageHeight);
-                        canvas.drawRoundRect(backgroundBoundsF, outerRadius, outerRadius, backgroundImagePaint);
-                        canvas.restore();
+                        let supportsPathOp = android.os.Build.VERSION.SDK_INT >= 19;
+                        if (supportsPathOp) {
+                            // Path.Op can be used in API level 19+ to achieve the perfect geometry.
+                            let backgroundPath = new android.graphics.Path();
+                            backgroundPath.addRoundRect(backgroundBoundsF, outerRadius, outerRadius, android.graphics.Path.Direction.CCW);
+                            let backgroundNoRepeatPath = new android.graphics.Path();
+                            backgroundNoRepeatPath.addRect(params.posX, params.posY, params.posX + imageWidth, params.posY + imageHeight, android.graphics.Path.Direction.CCW);
+                            (<any>backgroundPath).op(backgroundNoRepeatPath, (<any>android).graphics.Path.Op.INTERSECT);
+                            canvas.drawPath(backgroundPath, backgroundImagePaint);
+                        } else {
+                            // Clipping here will not be antialiased but at least it won't shine through the rounded corners.
+                            canvas.save();
+                            canvas.clipRect(params.posX, params.posY, params.posX + imageWidth, params.posY + imageHeight);
+                            canvas.drawRoundRect(backgroundBoundsF, outerRadius, outerRadius, backgroundImagePaint);
+                            canvas.restore();
+                        }
                     }
                 }
 
