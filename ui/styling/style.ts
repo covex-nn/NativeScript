@@ -403,6 +403,10 @@ function isPaddingValid(value: number): boolean {
     return isFinite(value) && !isNaN(value) && value >= 0;
 }
 
+function isClipPathValid(value: string): boolean {
+    return true;
+}
+
 function isMarginValid(value: number): boolean {
     var result = convertToPercentHelper(value);
     if (result.isError) {
@@ -590,6 +594,13 @@ export class Style extends DependencyObservable implements styling.Style {
         this._setValue(borderRadiusProperty, value);
     }
 
+    get clipPath(): string {
+        return this._getValue(clipPathProperty);
+    }
+    set clipPath(value: string) {
+        this._setValue(clipPathProperty, value);
+    }
+    
     get fontSize(): number {
         return this._getValue(fontSizeProperty);
     }
@@ -1048,6 +1059,9 @@ export var borderWidthProperty = new styleProperty.Property("borderWidth", "bord
 
 export var borderRadiusProperty = new styleProperty.Property("borderRadius", "border-radius",
     new PropertyMetadata(0, AffectsLayout, null, isPaddingValid), converters.numberConverter);
+    
+export var clipPathProperty = new styleProperty.Property("clipPath", "clip-path",
+    new PropertyMetadata(undefined, AffectsLayout, null, isClipPathValid));    
 
 export var backgroundInternalProperty = new styleProperty.Property("_backgroundInternal", "_backgroundInternal",
     new PropertyMetadata(background.Background.default, PropertyMetadataSettings.None, undefined, undefined, background.Background.equals));

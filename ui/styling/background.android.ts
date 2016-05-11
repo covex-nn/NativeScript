@@ -42,10 +42,21 @@ export module ad {
             private _borderWidth: number;
             private _cornerRadius: number;
             private _borderColor: number;
+            private _clipPath: string;
 
             constructor() {
                 super();
                 return global.__native(this);
+            }
+
+            get clipPath(): string {
+                return this._clipPath;
+            }
+            set clipPath(value: string) {
+                if (this._clipPath !== value) {
+                    this._clipPath = value;
+                    this.invalidateSelf();
+                }
             }
 
             get borderWidth(): number {
@@ -101,7 +112,7 @@ export module ad {
                 let backgroundBoundsF = new android.graphics.RectF(bounds.left + backoffAntialias, bounds.top + backoffAntialias, bounds.right - backoffAntialias, bounds.bottom - backoffAntialias);
 
                 let outerRadius = this._cornerRadius * this._density;
-                
+
                 // draw background
                 if (this.background.color && this.background.color.android) {
                     let backgroundColorPaint = new android.graphics.Paint();
@@ -109,7 +120,11 @@ export module ad {
                     backgroundColorPaint.setColor(this.background.color.android);
                     backgroundColorPaint.setAntiAlias(true);
 
-                    canvas.drawRoundRect(backgroundBoundsF, outerRadius, outerRadius, backgroundColorPaint);
+                    if (this.clipPath) {
+                        drawClipPath(this.clipPath, canvas, backgroundColorPaint, backgroundBoundsF);
+                    } else {
+                        canvas.drawRoundRect(backgroundBoundsF, outerRadius, outerRadius, backgroundColorPaint);
+                    }
                 }
 
                 // draw image
@@ -164,23 +179,29 @@ export module ad {
                     borderPaint.setColor(this._borderColor);
                     borderPaint.setAntiAlias(true);
 
-                    if (outerRadius <= 0) {
+                    if (this.clipPath) {
                         borderPaint.setStyle(android.graphics.Paint.Style.STROKE);
                         borderPaint.setStrokeWidth(borderWidth);
-                        canvas.drawRect(middleBoundsF, borderPaint);
-                    } else if (outerRadius >= borderWidth) {
-                        borderPaint.setStyle(android.graphics.Paint.Style.STROKE);
-                        borderPaint.setStrokeWidth(borderWidth);
-                        let middleRadius = Math.max(0, outerRadius - halfBorderWidth);
-                        canvas.drawRoundRect(middleBoundsF, middleRadius, middleRadius, borderPaint);
+                        drawClipPath(this.clipPath, canvas, borderPaint, backgroundBoundsF);
                     } else {
-                        let borderPath = new android.graphics.Path();
-                        let borderOuterBoundsF = new android.graphics.RectF(bounds.left, bounds.top, bounds.right, bounds.bottom);
-                        borderPath.addRoundRect(borderOuterBoundsF, outerRadius, outerRadius, android.graphics.Path.Direction.CCW);
-                        let borderInnerBoundsF = new android.graphics.RectF(bounds.left + borderWidth, bounds.top + borderWidth, bounds.right - borderWidth, bounds.bottom - borderWidth);
-                        borderPath.addRect(borderInnerBoundsF, android.graphics.Path.Direction.CW);
-                        borderPaint.setStyle(android.graphics.Paint.Style.FILL);
-                        canvas.drawPath(borderPath, borderPaint);
+                        if (outerRadius <= 0) {
+                            borderPaint.setStyle(android.graphics.Paint.Style.STROKE);
+                            borderPaint.setStrokeWidth(borderWidth);
+                            canvas.drawRect(middleBoundsF, borderPaint);
+                        } else if (outerRadius >= borderWidth) {
+                            borderPaint.setStyle(android.graphics.Paint.Style.STROKE);
+                            borderPaint.setStrokeWidth(borderWidth);
+                            let middleRadius = Math.max(0, outerRadius - halfBorderWidth);
+                            canvas.drawRoundRect(middleBoundsF, middleRadius, middleRadius, borderPaint);
+                        } else {
+                            let borderPath = new android.graphics.Path();
+                            let borderOuterBoundsF = new android.graphics.RectF(bounds.left, bounds.top, bounds.right, bounds.bottom);
+                            borderPath.addRoundRect(borderOuterBoundsF, outerRadius, outerRadius, android.graphics.Path.Direction.CCW);
+                            let borderInnerBoundsF = new android.graphics.RectF(bounds.left + borderWidth, bounds.top + borderWidth, bounds.right - borderWidth, bounds.bottom - borderWidth);
+                            borderPath.addRect(borderInnerBoundsF, android.graphics.Path.Direction.CW);
+                            borderPaint.setStyle(android.graphics.Paint.Style.FILL);
+                            canvas.drawPath(borderPath, borderPaint);
+                        }
                     }
                 }
             }
@@ -209,6 +230,8 @@ export module ad {
         ensureBorderDrawable();
         ensureLazyRequires();
 
+        var clipPathValue = v.style._getValue(style.clipPathProperty);
+
         var backgroundValue = v.style._getValue(style.backgroundInternalProperty);
         var borderWidth = v.borderWidth;
         var bkg = <any>nativeView.getBackground();
@@ -220,7 +243,7 @@ export module ad {
             let backgroundColor = bkg.backgroundColor = v.style._getValue(style.backgroundColorProperty).android;
             bkg.setColorFilter(backgroundColor, android.graphics.PorterDuff.Mode.SRC_IN);
             bkg.backgroundColor = backgroundColor;
-        } else if (v.borderWidth !== 0 || v.borderRadius !== 0 || !backgroundValue.isEmpty()) {
+        } else if (v.borderWidth !== 0 || v.borderRadius !== 0 || !backgroundValue.isEmpty() || !clipPathValue.isEmpty()) {
 
             if (!(bkg instanceof BorderDrawableClass)) {
                 bkg = new BorderDrawableClass();
@@ -236,6 +259,7 @@ export module ad {
             bkg.cornerRadius = v.borderRadius;
             bkg.borderColor = v.borderColor ? v.borderColor.android : android.graphics.Color.TRANSPARENT;
             bkg.background = backgroundValue;
+            bkg.clipPath = clipPathValue;
 
             if (getSDK() < 18) {
                 // Switch to software because of unsupported canvas methods if hardware acceleration is on:
@@ -273,4 +297,76 @@ export module ad {
             Math.round((borderWidth + v.style.paddingBottom) * density)
         );
     }
+}
+
+function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: android.graphics.Paint, bounds: android.graphics.RectF) {
+    var functionName = clipPath.substring(0, clipPath.indexOf("("));
+    var value = clipPath.replace(`${functionName}(`, "").replace(")", "");
+
+    if (functionName === "rect") {
+        var arr = value.split(/[\s]+/);
+
+        var top = clipPathValueToDeviceIndependentPixels(arr[0], bounds.top);
+        var left = clipPathValueToDeviceIndependentPixels(arr[1], bounds.left);
+        var bottom = clipPathValueToDeviceIndependentPixels(arr[2], bounds.bottom);
+        var right = clipPathValueToDeviceIndependentPixels(arr[3], bounds.right);
+
+        canvas.drawRect(left, top, right, bottom, paint);
+
+    } else if (functionName === "circle") {
+        var arr = value.split(/[\s]+/);
+
+        var radius = clipPathValueToDeviceIndependentPixels(arr[0], (bounds.width() > bounds.height() ? bounds.height() : bounds.width()) / 2);
+        var y = clipPathValueToDeviceIndependentPixels(arr[2], bounds.height());
+        var x = clipPathValueToDeviceIndependentPixels(arr[3], bounds.width());
+
+        canvas.drawCircle(x, y, radius, paint);
+
+    } else if (functionName === "ellipse") {
+        var arr = value.split(/[\s]+/);
+
+        var r1 = clipPathValueToDeviceIndependentPixels(arr[0], bounds.width() / 2);
+        var r2 = clipPathValueToDeviceIndependentPixels(arr[1], bounds.height() / 2);
+
+        var y = clipPathValueToDeviceIndependentPixels(arr[3], bounds.height());
+        var x = clipPathValueToDeviceIndependentPixels(arr[4], bounds.width());
+
+        canvas.drawOval(new android.graphics.RectF(r1, r2, x, y), paint);
+
+    } else if (functionName === "polygon") {
+        var path = new android.graphics.Path();
+        var firstPoint: view.Point;
+        var arr = value.split(/[,]+/);
+        for (let i = 0; i < arr.length; i++) {
+            let xy = arr[i].trim().split(/[\s]+/);
+            let point: view.Point = {
+                x: clipPathValueToDeviceIndependentPixels(xy[0], bounds.width()),
+                y: clipPathValueToDeviceIndependentPixels(xy[1], bounds.height())
+            };
+            path.moveTo(point.x, point.y);
+
+            if (!firstPoint) {
+                firstPoint = point;
+            }
+        }
+
+        path.lineTo(firstPoint.x, firstPoint.y);
+
+        canvas.drawPath(path, paint);
+    }
+}
+
+function clipPathValueToDeviceIndependentPixels(source: string, total: number): number {
+    var result;
+    source = source.trim();
+
+    if (source.indexOf("px") !== -1) {
+        result = parseFloat(source.replace("px", ""));
+    }
+    else if (source.indexOf("%") !== -1 && total > 0) {
+        result = (parseFloat(source.replace("%", "")) / 100) * utils.layout.toDeviceIndependentPixels(total);
+    } else {
+        result = parseFloat(source);
+    }
+    return utils.layout.toDevicePixels(result);
 }
