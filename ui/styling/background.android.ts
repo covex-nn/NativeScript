@@ -343,11 +343,13 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
                 x: clipPathValueToDeviceIndependentPixels(xy[0], bounds.width()),
                 y: clipPathValueToDeviceIndependentPixels(xy[1], bounds.height())
             };
-            path.moveTo(point.x, point.y);
-
+            
             if (!firstPoint) {
                 firstPoint = point;
+                path.moveTo(point.x, point.y);
             }
+
+            path.lineTo(point.x, point.y);
         }
 
         path.lineTo(firstPoint.x, firstPoint.y);
