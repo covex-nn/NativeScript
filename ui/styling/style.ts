@@ -891,6 +891,8 @@ export class Style extends DependencyObservable implements styling.Style {
         if (!(<background.Background>this._getValue(backgroundInternalProperty)).isEmpty()) {
             this._applyProperty(backgroundInternalProperty, this._getValue(backgroundInternalProperty));
         }
+        
+        this._applyProperty(clipPathProperty, this._getValue(clipPathProperty));
     }
 
     private _applyProperty(property: Property, newValue: any) {

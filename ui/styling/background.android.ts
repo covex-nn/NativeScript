@@ -310,30 +310,30 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
     if (functionName === "rect") {
         var arr = value.split(/[\s]+/);
 
-        var top = clipPathValueToDeviceIndependentPixels(arr[0], bounds.top);
-        var left = clipPathValueToDeviceIndependentPixels(arr[1], bounds.left);
-        var bottom = clipPathValueToDeviceIndependentPixels(arr[2], bounds.bottom);
-        var right = clipPathValueToDeviceIndependentPixels(arr[3], bounds.right);
+        var top = common.cssValueToDevicePixels(arr[0], bounds.top);
+        var left = common.cssValueToDevicePixels(arr[1], bounds.left);
+        var bottom = common.cssValueToDevicePixels(arr[2], bounds.bottom);
+        var right = common.cssValueToDevicePixels(arr[3], bounds.right);
 
         canvas.drawRect(left, top, right, bottom, paint);
 
     } else if (functionName === "circle") {
         var arr = value.split(/[\s]+/);
 
-        var radius = clipPathValueToDeviceIndependentPixels(arr[0], (bounds.width() > bounds.height() ? bounds.height() : bounds.width()) / 2);
-        var y = clipPathValueToDeviceIndependentPixels(arr[2], bounds.height());
-        var x = clipPathValueToDeviceIndependentPixels(arr[3], bounds.width());
+        var radius = common.cssValueToDevicePixels(arr[0], (bounds.width() > bounds.height() ? bounds.height() : bounds.width()) / 2);
+        var y = common.cssValueToDevicePixels(arr[2], bounds.height());
+        var x = common.cssValueToDevicePixels(arr[3], bounds.width());
 
         canvas.drawCircle(x, y, radius, paint);
 
     } else if (functionName === "ellipse") {
         var arr = value.split(/[\s]+/);
 
-        var r1 = clipPathValueToDeviceIndependentPixels(arr[0], bounds.width() / 2);
-        var r2 = clipPathValueToDeviceIndependentPixels(arr[1], bounds.height() / 2);
+        var r1 = common.cssValueToDevicePixels(arr[0], bounds.width() / 2);
+        var r2 = common.cssValueToDevicePixels(arr[1], bounds.height() / 2);
 
-        var y = clipPathValueToDeviceIndependentPixels(arr[3], bounds.height());
-        var x = clipPathValueToDeviceIndependentPixels(arr[4], bounds.width());
+        var y = common.cssValueToDevicePixels(arr[3], bounds.height());
+        var x = common.cssValueToDevicePixels(arr[4], bounds.width());
 
         canvas.drawOval(new android.graphics.RectF(r1, r2, x, y), paint);
 
@@ -344,8 +344,8 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
         for (let i = 0; i < arr.length; i++) {
             let xy = arr[i].trim().split(/[\s]+/);
             let point: view.Point = {
-                x: clipPathValueToDeviceIndependentPixels(xy[0], bounds.width()),
-                y: clipPathValueToDeviceIndependentPixels(xy[1], bounds.height())
+                x: common.cssValueToDevicePixels(xy[0], bounds.width()),
+                y: common.cssValueToDevicePixels(xy[1], bounds.height())
             };
             
             if (!firstPoint) {
@@ -360,19 +360,4 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
 
         canvas.drawPath(path, paint);
     }
-}
-
-function clipPathValueToDeviceIndependentPixels(source: string, total: number): number {
-    var result;
-    source = source.trim();
-
-    if (source.indexOf("px") !== -1) {
-        result = parseFloat(source.replace("px", ""));
-    }
-    else if (source.indexOf("%") !== -1 && total > 0) {
-        result = (parseFloat(source.replace("%", "")) / 100) * utils.layout.toDeviceIndependentPixels(total);
-    } else {
-        result = parseFloat(source);
-    }
-    return utils.layout.toDevicePixels(result);
 }

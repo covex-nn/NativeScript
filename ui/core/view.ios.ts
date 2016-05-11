@@ -567,7 +567,7 @@ export class ViewStyler implements style.Styler {
     private static getTranslateYProperty(view: View): any {
         return view.translateY;
     }
-    
+
     //z-index
     private static setZIndexProperty(view: View, newValue: any) {
         view.ios.layer.zPosition = newValue;
@@ -582,10 +582,14 @@ export class ViewStyler implements style.Styler {
     }
 
     public static registerHandlers() {
-        style.registerHandler(style.backgroundInternalProperty, new style.StylePropertyChangedHandler(
+        var backgroundHandler = new style.StylePropertyChangedHandler(
             ViewStyler.setBackgroundInternalProperty,
             ViewStyler.resetBackgroundInternalProperty,
-            ViewStyler.getNativeBackgroundInternalValue));
+            ViewStyler.getNativeBackgroundInternalValue);
+
+        style.registerHandler(style.backgroundInternalProperty, backgroundHandler);
+
+        style.registerHandler(style.clipPathProperty, backgroundHandler);
 
         style.registerHandler(style.visibilityProperty, new style.StylePropertyChangedHandler(
             ViewStyler.setVisibilityProperty,
