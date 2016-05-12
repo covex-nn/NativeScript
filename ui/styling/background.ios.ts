@@ -106,7 +106,18 @@ export module ios {
 
 function drawClipPath(view: viewModule.View) {
     var path: any;
-    var bounds = view._getCurrentLayoutBounds();
+
+    var nativeView = <UIView>view._nativeView;
+    var bounds = {
+        left: nativeView.bounds.origin.x,
+        top: nativeView.bounds.origin.y,
+        bottom: nativeView.bounds.size.height,
+        right: nativeView.bounds.size.width
+    };
+
+    if (bounds.right === 0 || bounds.bottom === 0) {
+        return;
+    }
 
     var clipPath = view.style.clipPath;
 
@@ -133,16 +144,14 @@ function drawClipPath(view: viewModule.View) {
         path = UIBezierPath.bezierPathWithArcCenterRadiusStartAngleEndAngleClockwise(CGPointMake(x, y), radius, 0, 360, true).CGPath;
 
     } else if (functionName === "ellipse") {
-
         var arr = value.split(/[\s]+/);
-/*
-        var r1 = common.cssValueToDevicePixels(arr[0], bounds.right / 2);
-        var r2 = common.cssValueToDevicePixels(arr[1], bounds.bottom / 2);
-*/
-        var y = common.cssValueToDevicePixels(arr[3], bounds.bottom);
-        var x = common.cssValueToDevicePixels(arr[4], bounds.right);
 
-        path = UIBezierPath.bezierPathWithOvalInRect(CGRectMake(x, y, bounds.right, bounds.bottom)).CGPath;
+        var left = common.cssValueToDevicePixels(arr[0], bounds.left);
+        var top = common.cssValueToDevicePixels(arr[1], bounds.top);
+        var height = common.cssValueToDevicePixels(arr[3], bounds.bottom * 2);
+        var width = common.cssValueToDevicePixels(arr[4], bounds.right * 2);
+
+        path = UIBezierPath.bezierPathWithOvalInRect(CGRectMake(left, top, width, height)).CGPath;
 
     } else if (functionName === "polygon") {
 
@@ -171,7 +180,21 @@ function drawClipPath(view: viewModule.View) {
     if (path) {
         var shape = CAShapeLayer.layer();
         shape.path = path;
-        (<UIView>view._nativeView).layer.mask = shape;
-        (<UIView>view._nativeView).clipsToBounds = true;
+        nativeView.layer.mask = shape;
+        nativeView.clipsToBounds = true;
+
+        if (view.borderWidth > 0 && view.borderColor) {
+            var borderLayer = CAShapeLayer.layer();
+            borderLayer.path = path;
+            borderLayer.lineWidth = view.borderWidth * 2;
+            borderLayer.strokeColor = view.borderColor.ios;
+            borderLayer.fillColor = UIColor.clearColor().CGColor;
+
+            borderLayer.frame = nativeView.bounds;
+
+            nativeView.layer.borderColor = undefined;
+            nativeView.layer.borderWidth = 0;
+            nativeView.layer.addSublayer(borderLayer);
+        }
     }
 }

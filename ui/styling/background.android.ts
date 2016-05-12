@@ -329,13 +329,12 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
     } else if (functionName === "ellipse") {
         var arr = value.split(/[\s]+/);
 
-        var r1 = common.cssValueToDevicePixels(arr[0], bounds.width() / 2);
-        var r2 = common.cssValueToDevicePixels(arr[1], bounds.height() / 2);
+        var left = common.cssValueToDevicePixels(arr[0], bounds.left);
+        var top = common.cssValueToDevicePixels(arr[1], bounds.top);
+        var height = common.cssValueToDevicePixels(arr[3], bounds.height() * 2);
+        var width = common.cssValueToDevicePixels(arr[4], bounds.width() * 2);
 
-        var y = common.cssValueToDevicePixels(arr[3], bounds.height());
-        var x = common.cssValueToDevicePixels(arr[4], bounds.width());
-
-        canvas.drawOval(new android.graphics.RectF(r1, r2, x, y), paint);
+        canvas.drawOval(new android.graphics.RectF(left, top, width, height), paint);
 
     } else if (functionName === "polygon") {
         var path = new android.graphics.Path();
