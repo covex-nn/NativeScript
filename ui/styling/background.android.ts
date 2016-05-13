@@ -336,8 +336,8 @@ function drawClipPath(clipPath: string, canvas: android.graphics.Canvas, paint: 
         
         var left = cX - rX;
         var top = cY - rY;
-        var right = rX * 2 - left;
-        var bottom = rY * 2 - top;
+        var right = (rX * 2) + left;
+        var bottom = (rY * 2) + top;
 
         canvas.drawOval(new android.graphics.RectF(left, top, right, bottom), paint);
 
