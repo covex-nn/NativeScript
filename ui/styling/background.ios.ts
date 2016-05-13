@@ -146,10 +146,15 @@ function drawClipPath(view: viewModule.View) {
     } else if (functionName === "ellipse") {
         var arr = value.split(/[\s]+/);
 
-        var left = common.cssValueToDevicePixels(arr[0], bounds.left);
-        var top = common.cssValueToDevicePixels(arr[1], bounds.top);
-        var height = common.cssValueToDevicePixels(arr[3], bounds.bottom * 2);
-        var width = common.cssValueToDevicePixels(arr[4], bounds.right * 2);
+        var rX = common.cssValueToDevicePixels(arr[0], bounds.right);
+        var rY = common.cssValueToDevicePixels(arr[1], bounds.bottom);
+        var cX = common.cssValueToDevicePixels(arr[3], bounds.right);
+        var cY = common.cssValueToDevicePixels(arr[4], bounds.bottom);
+        
+        var left = cX - rX;
+        var top = cY - rY;
+        var width = rX * 2;
+        var height = rY * 2;
 
         path = UIBezierPath.bezierPathWithOvalInRect(CGRectMake(left, top, width, height)).CGPath;
 
